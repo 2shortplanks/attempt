@@ -1,13 +1,13 @@
 package Attempt;
 
+use strict;
+use warnings;
+
 use Exporter;
 use base qw(Exporter);
 
 use vars qw(@EXPORT $VERSION);
 @EXPORT = qw(attempt);
-
-use strict;
-#use warnings;
 
 use Carp qw(croak);
 
@@ -61,8 +61,7 @@ scalar context is preserved though-out the call to the block.
 
 =cut
 
-sub attempt (&;@)
-{
+sub attempt (&;@) {
   my $code = shift;
   my %args = @_;
 
@@ -74,23 +73,21 @@ sub attempt (&;@)
   my $tries = exists($args{tries}) ? $args{tries} : 2;
 
   # try while we've got tries left.
-  while (1)
-  {
+  while (1) {
     # do we want a list?
     my $wantarray = wantarray;
 
     # try running the code
-    eval
-    {
-      if ($wantarray)
-        { @results = $code->() }
-      else
-        { $result = $code->() }
-    };
-
-    # return if we're sucessful
-    return ($wantarray ? @results : $result )
-      unless $@;
+    if (eval {
+      if ($wantarray) {
+        @results = $code->()
+      } else {
+        $result = $code->()
+      }
+      1;
+    }) {
+      return ($wantarray ? @results : $result )
+    }
 
     # we've used up a try
     $tries--;
