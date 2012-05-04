@@ -73,7 +73,7 @@ sub attempt (&;@) {
   my $tries = exists($args{tries}) ? $args{tries} : 2;
 
   # try while we've got tries left.
-  while (1) {
+  while ($tries-- > 0) {
     # do we want a list?
     my $wantarray = wantarray;
 
@@ -88,14 +88,14 @@ sub attempt (&;@) {
     }) {
       return ($wantarray ? @results : $result )
     }
-
-    # we've used up a try
-    $tries--;
-    last if $tries < 1;
+    # let the caller examine the error if possible
+    $args{error_handler}->($@)
+      if exists $args{error_handler};
 
     # sleep if we need to
     select undef, undef, undef, $args{delay}
-       if exists $args{delay};
+       if exists $args{delay}
+       && $tries > 0;
   }
 
   # got this far and didn't already return, so propogate the error
