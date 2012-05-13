@@ -11,7 +11,7 @@ use vars qw(@EXPORT $VERSION);
 
 use Carp qw(croak);
 
-$VERSION = "1.01";
+$VERSION = "1.02";
 
 =head1 NAME
 
@@ -29,7 +29,7 @@ Attempt - attempt to run code multiple times
     $dbh->{RaiseException} = 1;
     $dbh->do("alter table items change pie pies int(10)");
 
-  } tries => 3, delay => 2;
+  } tries => 3, delay => 2, error_handler => sub { warn "Failed, try again - $_[0]" };
 
 =head1 DESCRIPTION
 
@@ -53,7 +53,9 @@ block as normal.
 The particulars of the run can be changed by passing parameters after
 the code block. The C<tries> parameter effects the number of times the
 code will attempt to be run.  The C<delay> parameter determines how
-often perl will wait - sleep - between runs.
+often perl will wait - sleep - between runs.  The C<error_handler>
+parameter may be supplied for additional error processing after each
+failed attempt.
 
 C<attempt> can return values, and you can exit out of an attempt block
 at any point with a return statement as you might expect.  List and
@@ -64,19 +66,22 @@ scalar context is preserved though-out the call to the block.
 sub attempt (&;@) {
   my $code = shift;
   my %args = @_;
+	
+	# do we want a list?
+	my $wantarray = wantarray;
 
   my @results;
   my $result;
 
+	my $error;
+
   # find out how many attempts we're going to take,
   # defaulting to two.
-  my $tries = exists($args{tries}) ? $args{tries} : 2;
+  my $tries = exists $args{tries} ? $args{tries} : 2;
+	return unless $tries;
 
   # try while we've got tries left.
   while ($tries-- > 0) {
-    # do we want a list?
-    my $wantarray = wantarray;
-
     # try running the code
     if (eval {
       if ($wantarray) {
@@ -87,10 +92,13 @@ sub attempt (&;@) {
       1;
     }) {
       return ($wantarray ? @results : $result )
-    }
-    # let the caller examine the error if possible
-    $args{error_handler}->($@)
-      if exists $args{error_handler};
+    } else {
+			$error = $@;
+
+			# let the caller examine the error if possible
+			$args{error_handler}->($error)
+				if exists $args{error_handler};
+		}
 
     # sleep if we need to
     select undef, undef, undef, $args{delay}
@@ -99,7 +107,7 @@ sub attempt (&;@) {
   }
 
   # got this far and didn't already return, so propogate the error
-  croak $@;
+  croak $error;
 }
 
 =head1 AUTHOR
