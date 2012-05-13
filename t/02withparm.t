@@ -30,7 +30,7 @@ is($foo,"3","foo test");
 
 my $baz;
 lives_ok {
-	$baz = attempt { bar() } tries => 0;
+  $baz = attempt { bar() } tries => 0;
 } 'attempt is NOOP with 0 tries';
 is $baz, undef, 'left-hand side is undefined after 0 tries';
 

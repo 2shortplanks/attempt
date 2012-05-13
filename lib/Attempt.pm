@@ -66,19 +66,19 @@ scalar context is preserved though-out the call to the block.
 sub attempt (&;@) {
   my $code = shift;
   my %args = @_;
-	
-	# do we want a list?
-	my $wantarray = wantarray;
+  
+  # do we want a list?
+  my $wantarray = wantarray;
 
   my @results;
   my $result;
 
-	my $error;
+  my $error;
 
   # find out how many attempts we're going to take,
   # defaulting to two.
   my $tries = exists $args{tries} ? $args{tries} : 2;
-	return unless $tries;
+  return unless $tries;
 
   # try while we've got tries left.
   while ($tries-- > 0) {
@@ -93,12 +93,12 @@ sub attempt (&;@) {
     }) {
       return ($wantarray ? @results : $result )
     } else {
-			$error = $@;
+      $error = $@;
 
-			# let the caller examine the error if possible
-			$args{error_handler}->($error)
-				if exists $args{error_handler};
-		}
+      # let the caller examine the error if possible
+      $args{error_handler}->($error)
+        if exists $args{error_handler};
+    }
 
     # sleep if we need to
     select undef, undef, undef, $args{delay}
